@@ -1,7 +1,3 @@
-## 0.3.19+5
-
-* Add `mixedContentMode` option for Android WebView.
-
 ## 0.3.19+4
 
 * On iOS, fix the scroll view content inset is automatically adjusted. After the fix, the content position of the WebView is customizable by Flutter.
