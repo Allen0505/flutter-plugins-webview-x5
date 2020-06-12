@@ -38,6 +38,7 @@ final class InputAwareWebView extends WebView {
   private View threadedInputConnectionProxyView;
   private ThreadedInputConnectionProxyAdapterView proxyAdapterView;
   private View containerView;
+  private OnTouchListener dispatchTouchEventDelegation;
 
   InputAwareWebView(Context context, View containerView) {
     super(context);
@@ -55,6 +56,10 @@ final class InputAwareWebView extends WebView {
     if (containerView != null) {
       setInputConnectionTarget(proxyAdapterView);
     }
+  }
+
+  void setDispatchTouchEventDelegation(OnTouchListener dispatchTouchEventDelegation) {
+    this.dispatchTouchEventDelegation = dispatchTouchEventDelegation;
   }
 
   /**
@@ -226,6 +231,7 @@ final class InputAwareWebView extends WebView {
 
   @Override
   public boolean dispatchTouchEvent(MotionEvent ev) {
+    if (dispatchTouchEventDelegation != null) return dispatchTouchEventDelegation.onTouch(null, ev);
     this.ev = ev;
     return super.dispatchTouchEvent(ev);
   }

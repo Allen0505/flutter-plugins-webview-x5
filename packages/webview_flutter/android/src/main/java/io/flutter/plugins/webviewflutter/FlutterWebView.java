@@ -63,7 +63,7 @@ public class FlutterWebView implements PlatformView, MethodCallHandler {
 
     // function: using for video fullscreen
     flutterWebChromeClient = new FlutterWebChromeClient(
-            methodChannel, (ViewGroup) webView.getRootView());
+            methodChannel, webView);
     webView.setWebChromeClient(flutterWebChromeClient);
 
     flutterWebChromeClient.addSubClient(new WebChromeClient() {
