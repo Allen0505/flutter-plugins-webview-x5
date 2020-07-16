@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
 import android.webkit.ValueCallback;
 import android.webkit.WebSettings;
@@ -86,6 +87,10 @@ public class FlutterWebView implements PlatformView, MethodCallHandler {
     if (params.containsKey("userAgent")) {
       String userAgent = (String) params.get("userAgent");
       updateUserAgent(userAgent);
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      // to allow cross origin request
+      CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
     }
     if (params.containsKey("initialUrl")) {
       String url = (String) params.get("initialUrl");
