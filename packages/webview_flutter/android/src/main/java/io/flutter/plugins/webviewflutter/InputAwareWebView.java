@@ -216,7 +216,7 @@ final class InputAwareWebView extends WebView {
                 public void run() {
                   InputMethodManager imm =
                       (InputMethodManager) getContext().getSystemService(INPUT_METHOD_SERVICE);
-                  if (!imm.isAcceptingText()) {
+                  if (!imm.isAcceptingText() && containerView != null) {
                     imm.hideSoftInputFromWindow(
                         containerView.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
                   }
