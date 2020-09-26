@@ -89,6 +89,8 @@ abstract class WebViewPlatformController {
     throw UnimplementedError(
         "WebView currentUrl is not implemented on the current platform");
   }
+  
+  Future<String> get imeName => null;
 
   /// Checks whether there's a back history item.
   Future<bool> canGoBack() {

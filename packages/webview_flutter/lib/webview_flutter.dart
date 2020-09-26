@@ -605,6 +605,8 @@ class WebViewController {
 
   WebView _widget;
 
+  Future<String> get imeName => _webViewPlatformController.imeName;
+
   /// Loads the specified URL.
   ///
   /// If `headers` is not null and the URL is an HTTP URL, the key value paris in `headers` will

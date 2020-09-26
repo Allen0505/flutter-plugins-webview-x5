@@ -10,6 +10,7 @@ import android.hardware.display.DisplayManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
+import android.provider.Settings;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
@@ -171,6 +172,14 @@ public class FlutterWebView implements PlatformView, MethodCallHandler {
         break;
       case "currentUrl":
         currentUrl(result);
+        break;
+      case "imeName":
+        try {
+          result.success(Settings.Secure.getString(webView.getContext().getContentResolver(),
+                  Settings.Secure.DEFAULT_INPUT_METHOD));
+        } catch (Throwable ignore) {
+          result.success(null);
+        }
         break;
       case "evaluateJavascript":
         evaluateJavaScript(methodCall, result);
