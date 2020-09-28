@@ -5,6 +5,10 @@
 #import <Flutter/Flutter.h>
 #import <WebKit/WebKit.h>
 
+#ifndef WX_H5_PAY_SCHEMA
+  #define WX_H5_PAY_SCHEMA @""
+#endif
+
 NS_ASSUME_NONNULL_BEGIN
 
 @interface FLTWKNavigationDelegate : NSObject <WKNavigationDelegate>
