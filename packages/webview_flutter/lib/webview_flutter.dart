@@ -6,7 +6,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:webview_flutter/src/webview_method_channel.dart';
 
 import 'platform_interface.dart';
 import 'src/webview_android.dart';
@@ -81,14 +84,72 @@ enum MixedContentMode {
   compatibilityMode,
 }
 
+/// Android [WebViewPlatform] that uses [AndroidViewSurface] to build the [WebView] widget.
+///
+/// To use this, set [WebView.platform] to an instance of this class.
+///
+/// This implementation uses hybrid composition to render the [WebView] on
+/// Android. It solves multiple issues related to accessibility and interaction
+/// with the [WebView] at the cost of some performance on Android versions below
+/// 10. See https://github.com/flutter/flutter/wiki/Hybrid-Composition for more
+/// information.
+class SurfaceAndroidWebView extends AndroidWebView {
+  @override
+  Widget build({
+    BuildContext context,
+    CreationParams creationParams,
+    WebViewPlatformCreatedCallback onWebViewPlatformCreated,
+    Set<Factory<OneSequenceGestureRecognizer>> gestureRecognizers,
+    @required WebViewPlatformCallbacksHandler webViewPlatformCallbacksHandler,
+  }) {
+    assert(webViewPlatformCallbacksHandler != null);
+    return PlatformViewLink(
+      viewType: 'plugins.flutter.io/webview',
+      surfaceFactory: (
+        BuildContext context,
+        PlatformViewController controller,
+      ) {
+        return AndroidViewSurface(
+          controller: controller,
+          gestureRecognizers: gestureRecognizers ?? const <Factory<OneSequenceGestureRecognizer>>{},
+          hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+        );
+      },
+      onCreatePlatformView: (PlatformViewCreationParams params) {
+        return PlatformViewsService.initSurfaceAndroidView(
+          id: params.id,
+          viewType: 'plugins.flutter.io/webview',
+          // WebView content is not affected by the Android view's layout direction,
+          // we explicitly set it here so that the widget doesn't require an ambient
+          // directionality.
+          layoutDirection: TextDirection.rtl,
+          creationParams: MethodChannelWebViewPlatform.creationParamsToMap(
+            creationParams,
+          ),
+          creationParamsCodec: const StandardMessageCodec(),
+        )
+          ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
+          ..addOnPlatformViewCreatedListener((int id) {
+            if (onWebViewPlatformCreated == null) {
+              return;
+            }
+            onWebViewPlatformCreated(
+              MethodChannelWebViewPlatform(id, webViewPlatformCallbacksHandler),
+            );
+          })
+          ..create();
+      },
+    );
+  }
+}
+
 /// Decides how to handle a specific navigation request.
 ///
 /// The returned [NavigationDecision] determines how the navigation described by
 /// `navigation` should be handled.
 ///
 /// See also: [WebView.navigationDelegate].
-typedef FutureOr<NavigationDecision> NavigationDelegate(
-    NavigationRequest navigation);
+typedef FutureOr<NavigationDecision> NavigationDelegate(NavigationRequest navigation);
 
 /// Signature for when a [WebView] has started loading a page.
 typedef void PageStartedCallback(String url);
@@ -181,8 +242,7 @@ class WebView extends StatefulWidget {
     this.gestureNavigationEnabled = false,
     this.userAgent,
     this.mixedContentMode,
-    this.initialMediaPlaybackPolicy =
-        AutoMediaPlaybackPolicy.require_user_action_for_all_media_types,
+    this.initialMediaPlaybackPolicy = AutoMediaPlaybackPolicy.require_user_action_for_all_media_types,
   })  : assert(javascriptMode != null),
         assert(initialMediaPlaybackPolicy != null),
         super(key: key);
@@ -292,9 +352,9 @@ class WebView extends StatefulWidget {
   ///       webview, and frames will be opened in the main frame.
   ///     * When a navigationDelegate is set HTTP requests do not include the HTTP referer header.
   final NavigationDelegate navigationDelegate;
-  
+
   /// If specified, only those URL's matching this pattern would be handled by [navigationDelegate].
-  /// 
+  ///
   /// Only works for Android.
   final String navigationDelegateUrlPattern;
 
@@ -377,8 +437,7 @@ class WebView extends StatefulWidget {
 }
 
 class _WebViewState extends State<WebView> {
-  final Completer<WebViewController> _controller =
-      Completer<WebViewController>();
+  final Completer<WebViewController> _controller = Completer<WebViewController>();
 
   _PlatformCallbacksHandler _platformCallbacksHandler;
 
@@ -411,8 +470,7 @@ class _WebViewState extends State<WebView> {
   }
 
   void _onWebViewPlatformCreated(WebViewPlatformController webViewPlatform) {
-    final WebViewController controller =
-        WebViewController._(widget, webViewPlatform, _platformCallbacksHandler);
+    final WebViewController controller = WebViewController._(widget, webViewPlatform, _platformCallbacksHandler);
     _controller.complete(controller);
     if (widget.onWebViewCreated != null) {
       widget.onWebViewCreated(controller);
@@ -420,12 +478,10 @@ class _WebViewState extends State<WebView> {
   }
 
   void _assertJavascriptChannelNamesAreUnique() {
-    if (widget.javascriptChannels == null ||
-        widget.javascriptChannels.isEmpty) {
+    if (widget.javascriptChannels == null || widget.javascriptChannels.isEmpty) {
       return;
     }
-    assert(_extractChannelNames(widget.javascriptChannels).length ==
-        widget.javascriptChannels.length);
+    assert(_extractChannelNames(widget.javascriptChannels).length == widget.javascriptChannels.length);
   }
 }
 
@@ -454,8 +510,7 @@ WebSettings _webSettingsFromWidget(WebView widget) {
 }
 
 // This method assumes that no fields in `currentValue` are null.
-WebSettings _clearUnchangedWebSettings(
-    WebSettings currentValue, WebSettings newValue) {
+WebSettings _clearUnchangedWebSettings(WebSettings currentValue, WebSettings newValue) {
   assert(currentValue.javascriptMode != null);
   assert(currentValue.hasNavigationDelegate != null);
   assert(currentValue.hasProgressTracking != null);
@@ -520,8 +575,7 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
   WebView _widget;
 
   // Maps a channel name to a channel.
-  final Map<String, JavascriptChannel> _javascriptChannels =
-      <String, JavascriptChannel>{};
+  final Map<String, JavascriptChannel> _javascriptChannels = <String, JavascriptChannel>{};
 
   @override
   void onJavaScriptChannelMessage(String channel, String message) {
@@ -530,11 +584,9 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
 
   @override
   FutureOr<bool> onNavigationRequest({String url, bool isForMainFrame}) async {
-    final NavigationRequest request =
-        NavigationRequest._(url: url, isForMainFrame: isForMainFrame);
-    final bool allowNavigation = _widget.navigationDelegate == null ||
-        await _widget.navigationDelegate(request) ==
-            NavigationDecision.navigate;
+    final NavigationRequest request = NavigationRequest._(url: url, isForMainFrame: isForMainFrame);
+    final bool allowNavigation =
+        _widget.navigationDelegate == null || await _widget.navigationDelegate(request) == NavigationDecision.navigate;
     return allowNavigation;
   }
 
@@ -692,24 +744,18 @@ class WebViewController {
   }
 
   Future<void> _updateSettings(WebSettings newSettings) {
-    final WebSettings update =
-        _clearUnchangedWebSettings(_settings, newSettings);
+    final WebSettings update = _clearUnchangedWebSettings(_settings, newSettings);
     _settings = newSettings;
     return _webViewPlatformController.updateSettings(update);
   }
 
-  Future<void> _updateJavascriptChannels(
-      Set<JavascriptChannel> newChannels) async {
-    final Set<String> currentChannels =
-        _platformCallbacksHandler._javascriptChannels.keys.toSet();
+  Future<void> _updateJavascriptChannels(Set<JavascriptChannel> newChannels) async {
+    final Set<String> currentChannels = _platformCallbacksHandler._javascriptChannels.keys.toSet();
     final Set<String> newChannelNames = _extractChannelNames(newChannels);
-    final Set<String> channelsToAdd =
-        newChannelNames.difference(currentChannels);
-    final Set<String> channelsToRemove =
-        currentChannels.difference(newChannelNames);
+    final Set<String> channelsToAdd = newChannelNames.difference(currentChannels);
+    final Set<String> channelsToRemove = currentChannels.difference(newChannelNames);
     if (channelsToRemove.isNotEmpty) {
-      await _webViewPlatformController
-          .removeJavascriptChannels(channelsToRemove);
+      await _webViewPlatformController.removeJavascriptChannels(channelsToRemove);
     }
     if (channelsToAdd.isNotEmpty) {
       await _webViewPlatformController.addJavascriptChannels(channelsToAdd);
@@ -735,12 +781,11 @@ class WebViewController {
   /// embedded in the main frame HTML has been loaded.
   Future<String> evaluateJavascript(String javascriptString) {
     if (_settings.javascriptMode == JavascriptMode.disabled) {
-      return Future<String>.error(FlutterError(
-          'JavaScript mode must be enabled/unrestricted when calling evaluateJavascript.'));
+      return Future<String>.error(
+          FlutterError('JavaScript mode must be enabled/unrestricted when calling evaluateJavascript.'));
     }
     if (javascriptString == null) {
-      return Future<String>.error(
-          ArgumentError('The argument javascriptString must not be null.'));
+      return Future<String>.error(ArgumentError('The argument javascriptString must not be null.'));
     }
     // TODO(amirh): remove this on when the invokeMethod update makes it to stable Flutter.
     // https://github.com/flutter/flutter/issues/26431
@@ -774,12 +819,7 @@ class CookieManager {
   ///
   /// The default [domain] value is the domain name of [url].
   Future<bool> setCookie(String url, String name, String value,
-      {String domain,
-        String path = "/",
-        int expires,
-        int maxAge,
-        bool secure,
-        bool httpOnly}) async {
+      {String domain, String path = "/", int expires, int maxAge, bool secure, bool httpOnly}) async {
     domain ??= _parseDomainFromUrl(url);
 
     assert(url != null && url.isNotEmpty);
