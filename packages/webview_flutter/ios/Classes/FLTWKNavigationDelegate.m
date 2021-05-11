@@ -27,18 +27,7 @@
                     decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
   // to make wxpay returns app after paying
   NSURL *url = navigationAction.request.URL;
-  if (url != nil && url.absoluteString != nil && [url.absoluteString hasPrefix:@"https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb"]) {
-    if ([url.absoluteString rangeOfString:@"redirect_url="].location == NSNotFound) {
-      NSString *refererSchema =  [NSString stringWithFormat:@"%@://", WX_H5_PAY_SCHEMA];
-      NSString *newUrl = [NSString stringWithFormat:@"%@&redirect_url=%@", url.absoluteString, refererSchema];
-      NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:newUrl] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:60.0];
-      [request setValue:refererSchema forHTTPHeaderField:@"Referer"];
-      [webView loadRequest:request];
-      decisionHandler(WKNavigationActionPolicyCancel);
-      return;
-    }
-  }
-    
+
   int allowFlag = WKNavigationActionPolicyAllow + 2;
   if (!self.hasDartNavigationDelegate) {
     decisionHandler(allowFlag);
