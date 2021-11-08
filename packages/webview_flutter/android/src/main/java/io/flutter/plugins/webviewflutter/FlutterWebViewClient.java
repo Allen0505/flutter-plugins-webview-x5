@@ -18,6 +18,8 @@ import io.flutter.plugin.common.MethodChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 // We need to use WebViewClientCompat to get
 // shouldOverrideUrlLoading(WebView view, WebResourceRequest request)
@@ -173,11 +175,6 @@ class FlutterWebViewClient {
 
   private WebViewClientCompat internalCreateWebViewClientCompat() {
     return new WebViewClientCompat() {
-      @Override
-      public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-        return FlutterWebViewClient.this.shouldOverrideUrlLoading(view, request);
-      }
-
       //todo 注入本地资源
 
       @Nullable
@@ -198,6 +195,11 @@ class FlutterWebViewClient {
       @Override
       public boolean shouldOverrideUrlLoading(WebView view, String url) {
         return FlutterWebViewClient.this.shouldOverrideUrlLoading(view, url);
+      }
+
+      @Override
+      public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+        return FlutterWebViewClient.this.shouldOverrideUrlLoading(view, request);
       }
 
       @Override
