@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -37,6 +38,15 @@ class JavascriptMessage {
 
   /// The contents of the message that was sent by the JavaScript code.
   final String message;
+}
+
+/// iamyours: custom response for webview
+class Response {
+  final String mineType;
+  final String encoding;
+  final Uint8List data;
+
+  Response(this.mineType, this.encoding, this.data);
 }
 
 /// Callback type for handling messages sent from Javascript running in a web view.
@@ -166,6 +176,11 @@ typedef void PageLoadingCallback(int progress);
 /// Signature for when a [WebView] has finished loading a page.
 typedef void ScreenOrientationChanged(bool isLandscape);
 
+/// iamyours Signature for when a [WebView] interceptRequest .
+typedef Future<Response> ShouldInterceptRequestCallback(String url);
+
+typedef void OnScrollCallback(int x, int y);
+
 /// Specifies possible restrictions on automatic media playback.
 ///
 /// This is typically used in [WebView.initialMediaPlaybackPolicy].
@@ -237,6 +252,8 @@ class WebView extends StatefulWidget {
     this.onPageFinished,
     this.onReceivedTitle,
     this.onProgress,
+    this.shouldInterceptRequest,
+    this.onScroll,
     this.onScreenOrientationChanged,
     this.debuggingEnabled = false,
     this.gestureNavigationEnabled = false,
@@ -378,6 +395,10 @@ class WebView extends StatefulWidget {
 
   /// Invoked when a page is loading.
   final PageLoadingCallback onProgress;
+
+  final ShouldInterceptRequestCallback shouldInterceptRequest;
+
+  final OnScrollCallback onScroll;
 
   /// Invoked when a page starts loading.
   final ScreenOrientationChanged onScreenOrientationChanged;
@@ -632,6 +653,21 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
     }
     for (JavascriptChannel channel in channels) {
       _javascriptChannels[channel.name] = channel;
+    }
+  }
+
+  @override
+  Future<Response> shouldInterceptRequest(String url) async {
+    if (_widget.shouldInterceptRequest != null) {
+      return _widget.shouldInterceptRequest(url);
+    }
+    return null;
+  }
+
+  @override
+  void onScroll(int x, int y) {
+    if (_widget.onScroll != null) {
+      _widget.onScroll(x, y);
     }
   }
 }

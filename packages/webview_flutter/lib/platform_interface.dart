@@ -37,6 +37,11 @@ abstract class WebViewPlatformCallbacksHandler {
 
   /// Invoked by [WebViewPlatformController] when a page's orientation was changed.
   void onScreenOrientationChanged(bool isLandscape);
+
+  /// iamyours:Invoked by [WebViewPlatformController] when a request url intercepted.
+  Future<Response> shouldInterceptRequest(String url);
+
+  void onScroll(int x, int y);
 }
 
 /// Interface for talking to the webview's platform implementation.
@@ -89,7 +94,7 @@ abstract class WebViewPlatformController {
     throw UnimplementedError(
         "WebView currentUrl is not implemented on the current platform");
   }
-  
+
   Future<String> get imeName => null;
 
   /// Checks whether there's a back history item.
@@ -261,7 +266,7 @@ class WebSettings {
 
   /// Whether the [WebView] has a [NavigationDelegate] set.
   final bool hasNavigationDelegate;
-  
+
   /// URL pattern that would be handled by Dart.
   final String navigationDelegateUrlPattern;
 

@@ -6,7 +6,8 @@
 #import "FLTWKNavigationDelegate.h"
 #import "FLTWKProgressionDelegate.h"
 #import "JavaScriptChannelHandler.h"
-
+#import "FlutterInstance.h"
+#define UIColorFromARGB(argbValue) [UIColor colorWithRed:((float)((argbValue & 0xFF0000) >> 16))/255.0 green:((float)((argbValue & 0xFF00) >> 8))/255.0 blue:((float)(argbValue & 0xFF))/255.0 alpha:((float)((argbValue & 0xFF000000) >> 24))/255.0];
 @implementation FLTWebViewFactory {
   NSObject<FlutterBinaryMessenger>* _messenger;
 }
@@ -98,6 +99,8 @@
     _webView = [[FLTWKWebView alloc] initWithFrame:frame configuration:configuration];
     _navigationDelegate = [[FLTWKNavigationDelegate alloc] initWithChannel:_channel];
     _webView.navigationDelegate = _navigationDelegate;
+        [_webView.scrollView addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew context:nil];
+
     __weak __typeof__(self) weakSelf = self;
     [_channel setMethodCallHandler:^(FlutterMethodCall* call, FlutterResult result) {
       [weakSelf onMethodCall:call result:result];
@@ -112,6 +115,9 @@
 
     [_webView addObserver:self forKeyPath:NSStringFromSelector(@selector(title)) options:NSKeyValueObservingOptionNew context:NULL];
 
+    NSMutableDictionary *channels = [FlutterInstance get].channels;
+      NSString *key =[NSString stringWithFormat:@"%lld",_viewId];
+      [channels setObject:_channel forKey:key];
     [self applySettings:settings];
     // TODO(amirh): return an error if apply settings failed once it's possible to do so.
     // https://github.com/flutter/flutter/issues/36228
@@ -124,8 +130,27 @@
   return self;
 }
 
+
+#pragma mark - 监听加载进度
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
+
+    if ([keyPath isEqualToString:@"estimatedProgress"]) {
+        if (object == _webView) {
+            int progress =(int)(_webView.estimatedProgress*100);
+            [_channel invokeMethod:@"onProgressChanged" arguments: [NSNumber numberWithInt:progress]];
+        }
+    }else if ([keyPath isEqualToString:@"contentOffset"]) {
+        int x =(int)(_webView.scrollView.contentOffset.x);
+        int y =(int)(_webView.scrollView.contentOffset.y);
+        NSMutableDictionary *dic = [NSMutableDictionary dictionary];
+        dic[@"x"] = [NSNumber numberWithInteger:x];
+        dic[@"y"] = [NSNumber numberWithInteger:y];
+        [_channel invokeMethod:@"onScroll" arguments: dic];
+    }
+}
 - (void)dealloc {
   [_webView removeObserver:self forKeyPath:NSStringFromSelector(@selector(title))];
+   [_webView.scrollView removeObserver:self forKeyPath:@"contentOffset"];
   if (_progressionDelegate != nil) {
     [_progressionDelegate stopObservingProgress:_webView];
   }
@@ -390,7 +415,13 @@
     return false;
   }
   NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:nsUrl];
+    NSString *vid = [NSString stringWithFormat:@"%lld",_viewId];
+      [headers setValue:vid forKey:@"flutter_view_id"];
   [request setAllHTTPHeaderFields:headers];
+  [_webView evaluateJavaScript:@"navigator.userAgent" completionHandler:^(id result, NSError *error) {
+          NSString *fixAgent = [NSString stringWithFormat:@"%@#%d",result,_viewId];
+          [_webView setCustomUserAgent:fixAgent];
+      }];
   [_webView loadRequest:request];
   return true;
 }

@@ -92,6 +92,10 @@ class FlutterWebViewClient {
     methodChannel.invokeMethod("onPageFinished", args);
   }
 
+  private WebResourceResponse shouldInterceptRequest(WebView view, final String url) {
+    return new SyncExecutor().getResponse(methodChannel,url);
+  }
+
   void onLoadingProgress(int progress) {
     Map<String, Object> args = new HashMap<>();
     args.put("progress", progress);
@@ -131,6 +135,21 @@ class FlutterWebViewClient {
       public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         return FlutterWebViewClient.this.shouldOverrideUrlLoading(view, request);
       }
+      //todo 注入本地资源
+
+      @Nullable
+      @Override
+      public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+        WebResourceResponse response = FlutterWebViewClient.this.shouldInterceptRequest(view, url);
+        if (response != null) return response;
+        return super.shouldInterceptRequest(view, url);
+      }
+
+      @Nullable
+      @Override
+      public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+        return super.shouldInterceptRequest(view, request);
+      }
 
       @Override
       public void onPageStarted(WebView view, String url, Bitmap favicon) {
@@ -157,6 +176,23 @@ class FlutterWebViewClient {
       public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         return FlutterWebViewClient.this.shouldOverrideUrlLoading(view, request);
       }
+
+      //todo 注入本地资源
+
+      @Nullable
+      @Override
+      public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+        WebResourceResponse response = FlutterWebViewClient.this.shouldInterceptRequest(view, url);
+        if (response != null) return response;
+        return super.shouldInterceptRequest(view, url);
+      }
+
+      @Nullable
+      @Override
+      public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+        return super.shouldInterceptRequest(view, request);
+      }
+
 
       @Override
       public boolean shouldOverrideUrlLoading(WebView view, String url) {
