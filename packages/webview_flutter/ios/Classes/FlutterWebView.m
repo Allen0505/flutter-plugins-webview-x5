@@ -130,11 +130,14 @@
   return self;
 }
 
-
 #pragma mark - 监听加载进度
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
 
-    if ([keyPath isEqualToString:@"estimatedProgress"]) {
+    if ([keyPath isEqualToString:NSStringFromSelector(@selector(title))]) {
+        if (object == _webView && _hasTitleReceivedCallback) {
+          [_channel invokeMethod:@"onReceivedTitle" arguments:@{@"title":_webView.title}];
+        }
+      }else if ([keyPath isEqualToString:@"estimatedProgress"]) {
         if (object == _webView) {
             int progress =(int)(_webView.estimatedProgress*100);
             [_channel invokeMethod:@"onProgressChanged" arguments: [NSNumber numberWithInt:progress]];
@@ -448,14 +451,6 @@
     [_webView setCustomUserAgent:userAgent];
   } else {
     NSLog(@"Updating UserAgent is not supported for Flutter WebViews prior to iOS 9.");
-  }
-}
-
-- (void)observeValueForKeyPath:(NSString*)keyPath ofObject:(id)object change:(NSDictionary*)change context:(void*)context {
-  if ([keyPath isEqualToString:NSStringFromSelector(@selector(title))]) {
-    if (object == _webView && _hasTitleReceivedCallback) {
-      [_channel invokeMethod:@"onReceivedTitle" arguments:@{@"title":_webView.title}];
-    }
   }
 }
 
