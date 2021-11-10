@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 
-#import "WebViewFlutterPlugin.h"
+#import "FLTWebViewFlutterPlugin.h"
 #import "FLTCookieManager.h"
 #import "FlutterWebView.h"
 #import "FlutterNSURLProtocol.h"
