@@ -53,6 +53,12 @@ class MethodChannelWebViewPlatform implements WebViewPlatformController {
       case 'onScreenOrientationChanged':
         _platformCallbacksHandler.onScreenOrientationChanged(call.arguments['isLandscape']);
         return null;
+      case 'onPageReceivedError':
+        final int errorCode = call.arguments['errorCode'];
+        final String description = call.arguments['description'];
+        final String url = call.arguments['url'];
+        _platformCallbacksHandler.onPageReceivedError(errorCode, description, url);
+        return true;
     }
     throw MissingPluginException(
         '${call.method} was invoked but has no handler');

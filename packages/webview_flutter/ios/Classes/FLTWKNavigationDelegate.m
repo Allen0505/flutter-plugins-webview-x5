@@ -69,4 +69,9 @@
 - (void)webView:(WKWebView*)webView didFinishNavigation:(WKNavigation*)navigation {
   [_methodChannel invokeMethod:@"onPageFinished" arguments:@{@"url" : webView.URL.absoluteString}];
 }
+
+- (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error {
+    [_methodChannel invokeMethod:@"onPageReceivedError" arguments:@{@"errorCode": @(error.code), @"description": error.localizedDescription, @"url": webView.URL.absoluteString}];
+}
+
 @end

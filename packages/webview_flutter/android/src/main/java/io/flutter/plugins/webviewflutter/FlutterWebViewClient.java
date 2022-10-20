@@ -17,6 +17,9 @@ import io.flutter.plugin.common.MethodChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceResponse;
+import androidx.webkit.WebResourceErrorCompat;
 
 // We need to use WebViewClientCompat to get
 // shouldOverrideUrlLoading(WebView view, WebResourceRequest request)
@@ -92,6 +95,14 @@ class FlutterWebViewClient {
     methodChannel.invokeMethod("onPageFinished", args);
   }
 
+  private void onPageReceivedError(int errorCode, String description, String url) {
+    Map<String, Object> args = new HashMap<>();
+    args.put("errorCode", errorCode);
+    args.put("description", description);
+    args.put("url", url);
+    methodChannel.invokeMethod("onPageReceivedError", args);
+  }
+
   void onLoadingProgress(int progress) {
     Map<String, Object> args = new HashMap<>();
     args.put("progress", progress);
@@ -148,6 +159,32 @@ class FlutterWebViewClient {
         // handled even though they were handled. We don't want to propagate those as they're not
         // truly lost.
       }
+      @Deprecated
+      @Override
+      public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+        super.onReceivedError(view, errorCode, description, failingUrl);
+        Log.d(TAG, "Deprecated onReceivedError called");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+          return;
+        } else {
+          FlutterWebViewClient.this.onPageReceivedError(errorCode, description, failingUrl);
+        }
+      }
+
+      @Override
+      public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+        super.onReceivedError(view, request, error);
+        Log.d(TAG, "onReceivedError called");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+          if (request.isForMainFrame() && error != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+              FlutterWebViewClient.this.onPageReceivedError(error.getErrorCode(), (error.getDescription() != null ? error.getDescription().toString() : ""), ((request != null && request.getUrl() != null) ? request.getUrl().toString() : ""));
+            } else {
+              FlutterWebViewClient.this.onPageReceivedError(WebViewClient.ERROR_UNKNOWN, "", ((request != null && request.getUrl() != null) ? request.getUrl().toString() : ""));
+            }
+          }
+        }
+      }
     };
   }
 
@@ -178,6 +215,29 @@ class FlutterWebViewClient {
         // Deliberately empty. Occasionally the webview will mark events as having failed to be
         // handled even though they were handled. We don't want to propagate those as they're not
         // truly lost.
+      }
+
+      @Deprecated
+      @Override
+      public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+        super.onReceivedError(view, errorCode, description, failingUrl);
+        Log.d(TAG, "Deprecated onReceivedError called");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+          return;
+        } else {
+          FlutterWebViewClient.this.onPageReceivedError(errorCode, description, failingUrl);
+        }
+      }
+
+      @Override
+      public void onReceivedError(WebView view, WebResourceRequest request, WebResourceErrorCompat error) {
+        Log.d(TAG, "onReceivedError called");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+          super.onReceivedError(view, request, error);
+          if (request.isForMainFrame() && error != null) {
+            FlutterWebViewClient.this.onPageReceivedError(error.getErrorCode(), (error.getDescription() != null ? error.getDescription().toString() : ""), ((request != null && request.getUrl() != null) ? request.getUrl().toString() : ""));
+          }
+        }
       }
     };
   }

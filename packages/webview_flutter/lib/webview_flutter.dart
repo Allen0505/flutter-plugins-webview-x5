@@ -18,6 +18,7 @@ import 'src/webview_cupertino.dart';
 /// Optional callback invoked when a web view is first created. [controller] is
 /// the [WebViewController] for the created web view.
 typedef void WebViewCreatedCallback(WebViewController controller);
+typedef void PageReceivedErrorCallback(int errorCode, String description, String url);
 
 /// Describes the state of JavaScript support in a given web view.
 enum JavascriptMode {
@@ -242,6 +243,7 @@ class WebView extends StatefulWidget {
     this.gestureNavigationEnabled = false,
     this.userAgent,
     this.mixedContentMode,
+    this.onPageReceivedError,
     this.initialMediaPlaybackPolicy = AutoMediaPlaybackPolicy.require_user_action_for_all_media_types,
   })  : assert(javascriptMode != null),
         assert(initialMediaPlaybackPolicy != null),
@@ -432,6 +434,8 @@ class WebView extends StatefulWidget {
   /// The default policy is [AutoMediaPlaybackPolicy.require_user_action_for_all_media_types].
   final AutoMediaPlaybackPolicy initialMediaPlaybackPolicy;
 
+  final PageReceivedErrorCallback onPageReceivedError;
+
   @override
   State<StatefulWidget> createState() => _WebViewState();
 }
@@ -601,6 +605,13 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
   void onPageFinished(String url) {
     if (_widget.onPageFinished != null) {
       _widget.onPageFinished(url);
+    }
+  }
+
+  @override
+  void onPageReceivedError(int errorCode, String description, String url) {
+    if (_widget.onPageReceivedError != null) {
+      _widget.onPageReceivedError(errorCode, description, url);
     }
   }
 

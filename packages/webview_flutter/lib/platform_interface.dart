@@ -37,6 +37,9 @@ abstract class WebViewPlatformCallbacksHandler {
 
   /// Invoked by [WebViewPlatformController] when a page's orientation was changed.
   void onScreenOrientationChanged(bool isLandscape);
+
+  /// Invoked by [WebViewPlatformController] when a page has loading error.
+  void onPageReceivedError(int errorCode, String description, String url);
 }
 
 /// Interface for talking to the webview's platform implementation.
