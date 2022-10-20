@@ -29,6 +29,8 @@ import io.flutter.plugin.platform.PlatformView;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import android.webkit.DownloadListener;
+import androidx.annotation.Nullable;
 
 public class FlutterWebView implements PlatformView, MethodCallHandler {
   private static final String JS_CHANNEL_NAMES_FIELD = "javascriptChannelNames";
@@ -59,6 +61,7 @@ public class FlutterWebView implements PlatformView, MethodCallHandler {
     webView.getSettings().setDomStorageEnabled(true);
     webView.getSettings().setBuiltInZoomControls(true);
     webView.getSettings().setDisplayZoomControls(false);
+    webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
     webView.getSettings().setTextZoom(100); // ignore System Font Size
 
     methodChannel = new MethodChannel(messenger, "plugins.flutter.io/webview_" + id);
@@ -78,6 +81,11 @@ public class FlutterWebView implements PlatformView, MethodCallHandler {
     });
 
     flutterWebViewClient = new FlutterWebViewClient(methodChannel);
+    FlutterDownloadListener flutterDownloadListener =
+            new FlutterDownloadListener(flutterWebViewClient);
+    flutterDownloadListener.setWebView(webView);
+    webView.setDownloadListener(flutterDownloadListener);
+
     applySettings((Map<String, Object>) params.get("settings"));
 
     if (params.containsKey(JS_CHANNEL_NAMES_FIELD)) {
